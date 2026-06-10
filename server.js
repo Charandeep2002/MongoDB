@@ -1,42 +1,71 @@
 const express = require("express");
-const app = express();
 const path = require("path");
-const MongoClient = require("mongodb").MongoClient;
+const { MongoClient } = require("mongodb");
 
+const app = express();
 const PORT = 5050;
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
 
-const MONGO_URL = "mongodb://admin:qwerty@localhost:27017";
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "public")));
+
+const MONGO_URL = "mongodb://admin:qwerty@mongo:27017";
+
 const client = new MongoClient(MONGO_URL);
 
-//GET all users
-app.get("/getUsers", async (req, res) => {
-    await client.connect(URL);
-    console.log('Connected successfully to server');
+async function connectDB() {
+    try {
+        await client.connect();
+        console.log("Connected successfully to MongoDB");
+    } catch (err) {
+        console.error(err);
+    }
+}
 
-    const db = client.db("Charandeep-db");
-    const data = await db.collection('users').find({}).toArray();
-    
-    client.close();
-    res.send(data);
+connectDB();
+
+// Home Page
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-//POST new user
+// Create User
 app.post("/addUser", async (req, res) => {
-    const userObj = req.body;
-    console.log(req.body);
-    await client.connect(URL);
-    console.log('Connected successfully to server');
+    try {
+        const userObj = {
+            email: req.body.email,
+            username: req.body.username,
+            password: req.body.password
+        };
 
-    const db = client.db("Charandeep-db");
-    const data = await db.collection('users').insertOne(userObj);
-    console.log(data);
-    console.log("data inserted in DB");
-    client.close();
+        const db = client.db("Charandeep-db");
+
+        await db.collection("users").insertOne(userObj);
+
+        console.log("User inserted");
+
+        res.send(`
+            <h2>User Created Successfully</h2>
+            <a href="/">Go Back</a>
+        `);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error inserting user");
+    }
 });
 
+// Get Users
+app.get("/getUsers", async (req, res) => {
+    try {
+        const db = client.db("Charandeep-db");
+        const users = await db.collection("users").find({}).toArray();
+
+        res.json(users);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error fetching users");
+    }
+});
 
 app.listen(PORT, () => {
-    console.log(`server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
