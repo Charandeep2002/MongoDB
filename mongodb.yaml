@@ -8,6 +8,8 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: qwerty
+    volumes:
+    - /Users/India/OneDrive/Desktop/data:/data/db
 
   mongo-express:
     image: mongo-express
@@ -19,7 +21,7 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://admin:qwerty@mongo:27017/
 
   testapp:
-    build: .
+    image: charandeep707/testapp
     ports:
       - "5050:5050"
     depends_on:
